@@ -1,3 +1,3 @@
-import {hi} from '../dist/index.js'
+import SeaweedEditor from '../dist/index.js'
 
-hi();
+const editor = SeaweedEditor.createEditor("wrapper");

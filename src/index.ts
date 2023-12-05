@@ -1,5 +1,9 @@
-import Editor from "./Editor/Editor"
-export function hi(){
-    console.log(Editor.id)
-    console.log(Editor.id)
+import SeaweedEditor from "./Editor/Editor";
+
+function createEditor(elem:string | HTMLElement){
+    return SeaweedEditor(elem);
 }
+
+export default Object.freeze({
+    createEditor
+});
