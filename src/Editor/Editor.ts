@@ -1,10 +1,13 @@
-import * as ElementFactory from "./Elements/ElementFactory";
+import * as ComponentBuilder from "./Component/ComponentBuilder";
+import Writer from "./Writer";
 
-export class SwaweedEditor {
+export class SeaweedEditor {
     rootEl : HTMLElement | null = null;
-    
+    pageComp : HTMLElement | null = null;
+    writer : Writer | null = null;
     constructor(elem : string | HTMLElement){
-        let rootEl
+        let rootEl;
+
         if(typeof elem == "string"){
             rootEl = document.getElementById(elem);
         } else if(elem instanceof HTMLElement){
@@ -18,12 +21,13 @@ export class SwaweedEditor {
             console.error("에디터 생성에 실패하였습니다. 제공된 인자를 확인해주세요.");
             return;
         }
-
-        this.rootEl = rootEl
-
+        this.rootEl = rootEl;
+        this.pageComp = ComponentBuilder.createPageComponent();
+        this.rootEl.appendChild(this.pageComp);
+        this.writer = new Writer(this);
     }
 }
 
-export default function SeaweedEditor(elem:string | HTMLElement){
-    return new SwaweedEditor(elem);
+export default function createEditor(elem:string | HTMLElement){
+    return new SeaweedEditor(elem);
 };

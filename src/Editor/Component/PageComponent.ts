@@ -1,4 +1,4 @@
-export default function EditorWrapper(){
+export default function PageComponent(){
     
     const editorWrapper = document.createElement("div");
 
