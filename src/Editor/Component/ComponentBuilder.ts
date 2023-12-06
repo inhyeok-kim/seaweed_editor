@@ -1,6 +1,9 @@
-import { SeaweedEditor } from "../Editor";
-import PageComponent from "./PageComponent";
+import Page from "./Page";
+import TextBlock from "./TextBlock";
 
-export function createPageComponent(){
-    return PageComponent();
+export function createPage(){
+    return Page();
+}
+export function createTextBlock(){
+    return TextBlock();
 }

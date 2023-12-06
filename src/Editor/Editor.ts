@@ -22,7 +22,8 @@ export class SeaweedEditor {
             return;
         }
         this.rootEl = rootEl;
-        this.pageComp = ComponentBuilder.createPageComponent();
+        this.pageComp = ComponentBuilder.createPage();
+        this.pageComp.appendChild(ComponentBuilder.createTextBlock());
         this.rootEl.appendChild(this.pageComp);
         this.writer = new Writer(this);
     }
