@@ -1,40 +1,65 @@
-import { SeaweedEditor } from "./Editor";
+import * as ActionProcessor from "./ActionProcessor";
+import { SeaweedEditor } from "./SeaweedEditor";
+import KeyDownManger from "./KeyDownManger";
+import SWDocument from "./SWDocument";
 
 export default class Writer {
     editor : SeaweedEditor
-    pageComp : HTMLElement | null = null
-    keyboardMap : KeyboardMap | null =null;
+    swDocument : SWDocument
+    keyboardMap : KeyDownManger | null =null;
+    selection : Selection | null = null;
+    range : Range | null = null;
 
-    constructor(editor : SeaweedEditor){
-        this.editor = editor
-        this.pageComp = editor.pageComp
-        this.keyboardMap = new KeyboardMap();
+    constructor(editor : SeaweedEditor, swDocument : SWDocument){
+        this.editor = editor;
+        this.swDocument = swDocument;
+        this.keyboardMap = new KeyDownManger();
         this.setEventListner();
     }
 
     setEventListner(){
         // this.pageComp?.addEventListener('focus',this.focusEvent)
         // this.pageComp?.addEventListener('blur',this.blurEvent)
-        document.addEventListener('selectionchange',this.selectiOnChangeHandler.bind(this))
-        this.pageComp?.addEventListener("keydown",this.keyDownHandler.bind(this));
-        this.pageComp?.addEventListener("keyup",this.keyUpHandler.bind(this));
+        document.addEventListener('selectionchange',this.selectionChangeHandler.bind(this))
+        this.swDocument.page?.addEventListener("keydown",this.keyDownHandler.bind(this));
+        this.swDocument.page?.addEventListener("keyup",this.keyUpHandler.bind(this));
+        this.swDocument.page?.addEventListener("paste",this.pasteHandler.bind(this));
+
     }
 
+    pasteHandler(e : ClipboardEvent){
+        // e.stopPropagation();
+        // e.preventDefault();
+        // const clipboardData = e.clipboardData;
+        // const pastedData = clipboardData?.getData('text/html');
+        // const domParser = new DOMParser();
+        // const doc = domParser.parseFromString(pastedData!, 'text/html');
+        // console.log(doc);
+    }
     keyDownHandler(e: KeyboardEvent){
         this.keyboardMap?.keyDown(e.code);
-        if(this.keyboardMap?.isOnly(["Enter"])){
+        if(this.keyboardMap?.isInclude(["Enter"])){
             e.preventDefault();
-            
+            const actionProcess = ActionProcessor.createNewline(this);
+            this.swDocument.addActionProcess(actionProcess);
         }
     }
     keyUpHandler(e: KeyboardEvent){
         this.keyboardMap?.keyUp(e.code);
     }
 
-    selectiOnChangeHandler(e : Event){
-        const selection = document.getSelection();
-        if(selection){
-            // console.log(selection.getRangeAt(0));
+    selectionChangeHandler(e : Event){
+        try {
+            const selection = document.getSelection();
+            this.selection = selection;
+            if(selection){
+                const range = selection.getRangeAt(0);
+                this.range = range;
+            }
+        } catch (error) {
+            console.log('error');
+            this.selection = null;
+            this.range = null;
         }
     }
     focusHandler(e : FocusEvent){
@@ -43,42 +68,7 @@ export default class Writer {
     blurHandler(e : FocusEvent){
         console.log(e);
     }
-}
 
-class KeyboardMap {
-    private keyDownMap : {[index : string] : boolean} = {}
-    private keyDownCnt : number = 0
     
-    keyDown(code : string){
-        this.keyDownMap[code] = true;
-        this.keyDownCnt++;
-    }
-
-    keyUp(code : string){
-        this.keyDownMap[code] = false;
-        this.keyDownCnt--;
-    }
-
-    isOnly(codes : string[]){
-        if(this.keyDownCnt === codes.length) {
-            for(let i=0; i<codes.length;i++){
-                if(!this.keyDownMap[codes[i]]){
-                    return false
-                }
-            }
-            return true;
-        }
-
-        return false;
-    }
-
-    isInclude(codes : string[]){
-        for(let i=0; i<codes.length;i++){
-            if(!this.keyDownMap[codes[i]]){
-                return false;
-            }
-        }
-        return true;
-    }
-
 }
+

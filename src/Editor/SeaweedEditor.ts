@@ -1,10 +1,11 @@
-import * as ComponentBuilder from "./Component/ComponentBuilder";
+import SWDocument from "./SWDocument";
 import Writer from "./Writer";
 
 export class SeaweedEditor {
     rootEl : HTMLElement | null = null;
-    pageComp : HTMLElement | null = null;
+    swDocument : SWDocument | null = null;
     writer : Writer | null = null;
+
     constructor(elem : string | HTMLElement){
         let rootEl;
 
@@ -22,10 +23,9 @@ export class SeaweedEditor {
             return;
         }
         this.rootEl = rootEl;
-        this.pageComp = ComponentBuilder.createPage();
-        this.pageComp.appendChild(ComponentBuilder.createTextBlock());
-        this.rootEl.appendChild(this.pageComp);
-        this.writer = new Writer(this);
+        this.swDocument = new SWDocument(this);
+
+        this.writer = new Writer(this, this.swDocument);
     }
 }
 
