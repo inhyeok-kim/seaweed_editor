@@ -20,7 +20,7 @@ export default class Writer {
     setEventListner(){
         // this.pageComp?.addEventListener('focus',this.focusEvent)
         // this.pageComp?.addEventListener('blur',this.blurEvent)
-        document.addEventListener('selectionchange',this.selectionChangeHandler.bind(this))
+        document.addEventListener('selectionchange',this.selectionChangeHandler.bind(this));
         this.swDocument.page?.addEventListener("keydown",this.keyDownHandler.bind(this));
         this.swDocument.page?.addEventListener("keyup",this.keyUpHandler.bind(this));
         this.swDocument.page?.addEventListener("paste",this.pasteHandler.bind(this));
