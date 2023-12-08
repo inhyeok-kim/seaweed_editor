@@ -24,9 +24,22 @@ export default class Writer {
         this.swDocument.page?.addEventListener("keydown",this.keyDownHandler.bind(this));
         this.swDocument.page?.addEventListener("keyup",this.keyUpHandler.bind(this));
         this.swDocument.page?.addEventListener("paste",this.pasteHandler.bind(this));
-
+        this.swDocument.page?.addEventListener("input",this.inputHandler.bind(this));
     }
 
+    inputHandler(e:Event){
+        if(this.range?.startContainer.nodeName !== '#text'){
+            const spanRange = document.createRange();
+            const currRange= document.getSelection()?.getRangeAt(0);
+            spanRange.setEnd(currRange?.endContainer!,1);
+            if(this.range?.startContainer.firstChild && this.range?.startContainer.firstChild.nodeName == 'SPAN'){
+                spanRange.setStart(this.range?.startContainer.firstChild!,0);
+            } else {
+                spanRange.setStart(this.range?.startContainer!,0);
+                spanRange.surroundContents(document.createElement("span"));
+            }
+        }
+    }
     pasteHandler(e : ClipboardEvent){
         // e.stopPropagation();
         // e.preventDefault();
