@@ -1,0 +1,24 @@
+[
+    {
+       "key" : "1",
+        "parent" : "0",
+        "children" : [
+            {
+                "key" : "2",
+                "parent" : "1",
+                "index" : 0,
+                "text" : "test",
+                "type" : "text"
+            }
+            ,{
+                "key" : "3",
+                "parent" : "1",
+                "index" : 1,
+                "text" : "best",
+                "type" : "text"
+            }
+        ],
+        "index" : 0,
+        "type" : "paragraph"
+    }
+]

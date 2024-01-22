@@ -1,11 +1,22 @@
 import Model from "./Model";
 
 export default class Text extends Model{
-    text : string = ''
+    text : string = '';
+    static domType = 'span';
 
-    constructor(key:string, text:string){
+    constructor(key:string,value: string){
         super(key);
-        this.text = text;
+    }
+    
+    static create(key: string, text? : string): Text {
+        const model = super.create(key,text) as Text;
+        if(text){
+            model.text = text;
+            (model.dom! as HTMLSpanElement).innerText = model.text;
+        }
+
+        return model;
+
     }
 
 }

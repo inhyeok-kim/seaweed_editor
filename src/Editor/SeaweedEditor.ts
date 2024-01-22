@@ -1,6 +1,14 @@
+import SwDocument from "./modules/SwDocument";
+import SwSelection from "./modules/SwSelection";
 
 export class SeaweedEditor {
     rootEl : HTMLElement | null = null;
+    editorEl : HTMLDivElement | null = null;
+    swDocument : SwDocument | undefined;
+    swSelection : SwSelection | undefined;
+
+    selectionChangeHandlers : Function[] = [];
+    contentsChangeHandlers : Function[] = [];
 
     constructor(elem : string | HTMLElement){
         let rootEl;
@@ -19,7 +27,34 @@ export class SeaweedEditor {
             return;
         }
         this.rootEl = rootEl;
+
+        const editorEl = document.createElement('div');
+        editorEl.setAttribute('contenteditable','true');
+        this.editorEl = editorEl;
+        rootEl.appendChild(editorEl);
+        
+        fetch('/test/Test.json')
+        .then(res=>res.text())
+        .then(text => {
+            this.swDocument = new SwDocument(this,text);
+            this.swSelection = new SwSelection(this, this.swDocument);
+        })
+
     }
+
+    on(event:'selection_change'|'contents_change',fuc:Function){
+        switch (event) {
+            case 'contents_change':
+                this.contentsChangeHandlers.push(fuc);
+                break;
+            case 'selection_change':
+                this.selectionChangeHandlers.push(fuc);
+                break;
+        }
+    }
+
+    
+
 }
 
 export default function createEditor(elem:string | HTMLElement){

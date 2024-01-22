@@ -2,17 +2,21 @@ export default class Model{
     key : string;
     parent : Model | null = null;
     children : Model[] = [];
-    dom : Node | null = null;
-    #domType :string = '';
+    dom : Element | null = null;
+    index : number = 0
+    static domType :string = '';
+    #isContainer : boolean = false;
     
-    constructor(key:string){
+    constructor(key:string, arg? : any){
         this.key = key;
-        this. dom = this.createDom();
     }
 
-    createDom(){
-        const dom = document.createElement(this.#domType);
-        return dom;
+    static create(key:string,arg? : any){
+        const model = new this(key);
+        const dom = document.createElement(this.domType);
+        dom.dataset.id = key;
+        model.dom = dom;
+        return model;
     }
 
     appendAt(child : Model,index?:number){
@@ -35,6 +39,7 @@ export default class Model{
         if(child.parent){
             child.parent.removeChild(child);
         }
+        child.parent = this;
     }
 
     appendAtKey(child : Model, key : string, direction : 'before'|'after'){
@@ -52,6 +57,7 @@ export default class Model{
         if(child.parent){
             child.parent.removeChild(child);
         }
+        child.parent = this;
     }
 
     removeChild(child : Model | string){
@@ -60,6 +66,13 @@ export default class Model{
             children.splice(children.findIndex(m=>m.key ===child),1);
         } else {
             children.splice(children.findIndex(m=>m.key ===child.key),1);
+        }
+    }
+
+    remove(){
+        if(this.parent){
+            this.parent.removeChild(this);
+            console.log('remove ', this.key);
         }
     }
 
