@@ -14,8 +14,9 @@ export default class SwDocument{
 
     constructor(editor : SeaweedEditor, document? : string){
         this.editor = editor;
-        this.editor.editorEl!.addEventListener('input',this.inputEventHandler.bind(this));
-        this.editor.editorEl?.addEventListener('paste',this.pasteEventHandler.bind(this));
+        this.editor.editorEl!.addEventListener('beforeinput',this.beforeInputEventHandler.bind(this));
+        // this.editor.editorEl!.addEventListener('input',this.inputEventHandler.bind(this));
+        // this.editor.editorEl?.addEventListener('paste',this.pasteEventHandler.bind(this));
 
         if(document){
             // this.#mocument = document;
@@ -97,7 +98,7 @@ export default class SwDocument{
 
     inputEventHandler(e:Event){
         const inputType = (e as InputEvent).inputType;
-        console.log(e);
+        e.preventDefault();
         if(inputType === 'deleteContentBackward'){
             this.editor.swSelection?.selection();
             // const selection = getSelection();
@@ -105,9 +106,18 @@ export default class SwDocument{
         } else {
             const data = (e as InputEvent).data;
             const selection = this.editor.swSelection?.getSelection();
-            
         }
     }
+
+    beforeInputEventHandler(e:Event){
+        const ev = e as InputEvent;
+        // const ranges = ev.getTargetRanges();
+        // if(ranges.length > 1){
+        this.getSelectedNodes();
+        //     e.preventDefault();
+        // }
+    }
+
     pasteEventHandler(e:ClipboardEvent){
         const paste = e.clipboardData!.getData("text/html");
         // console.log(paste);
@@ -181,26 +191,53 @@ export default class SwDocument{
         if(model){
             delete this.mocuMap[model.key];
             model.remove();
-            console.log(this.mocument);
+            // console.log(this.mocument);
         }
     }
 
     newLine(model : Model){
-        const newModel = new (Object.getPrototypeOf(model).constructor)(nanoid());
-        console.log(newModel);
+        let target = model;
+        if(!Object.getPrototypeOf(model).constructor.isContainer){
+            target = model.parent!;
+        }
+        const newModel = (Object.getPrototypeOf(target).constructor.create)(nanoid());
         this.mocuMap[newModel.key] = newModel;
-        if(model.parent){
-            model.parent.appendAtKey(newModel,model.key,'after');
+        if(target.parent){
+            target.parent.appendAtKey(newModel,target.key,'after');
         } else {
-            const index = this.mocument.findIndex(_m=>_m.key = model.key);
+            const index = this.mocument.findIndex(_m=>_m.key = target.key);
             if(index === this.mocument.length-1){
                 this.mocument.push(newModel);
                 this.editor.editorEl?.appendChild(newModel.dom!);
             } else {
-                this.editor.editorEl?.insertBefore(this.mocument[index+1].dom!,newModel.dom!);
+                this.editor.editorEl?.insertBefore(newModel.dom!,this.mocument[index+1].dom!);
                 this.mocument.splice(index+1,0,newModel);
             }
         } 
     }
 
+    getSelectedNodes() {
+        const range = document.getSelection()?.getRangeAt(0);
+        let list : Node[] = [];
+        if(range){
+            const root = range.commonAncestorContainer;
+            list.push(root);
+            if(root.childNodes.length>1){
+                list = list.concat(this.getSelectedChildren(range,root));
+                console.log(list);
+            }
+        }
+    }
+    getSelectedChildren(range : Range, node : Node){
+        let list : Node[] = [];
+        if(node.hasChildNodes()){
+            node.childNodes.forEach(_node =>{
+                if(range.intersectsNode(_node)){
+                    list.push(_node);
+                    list = list.concat(this.getSelectedChildren(range,_node))
+                }
+            });
+        }
+        return list;
+    }
 }

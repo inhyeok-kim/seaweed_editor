@@ -30,7 +30,7 @@ export default class Model{
                 this.dom?.appendChild(child.dom!);
                 children.push(child);
             } else {
-                this.dom!.insertBefore(children[index].dom!,child.dom!);
+                this.dom!.insertBefore(child.dom!,children[index].dom!);
                 children.splice(index,0,child);
             }
         } else {
