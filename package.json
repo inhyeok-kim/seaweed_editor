@@ -14,5 +14,8 @@
     "ts-loader": "^9.5.1",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "nanoid": "^5.0.4"
   }
 }

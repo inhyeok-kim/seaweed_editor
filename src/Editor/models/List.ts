@@ -1,8 +1,8 @@
 import Model from "./Model";
 
-export default class Paragraph extends Model{
+export default class List extends Model{
     static isContainer = true;
-    static domType = 'p';
+    static domType = 'ul';
     
     constructor(key:string, text:string){
         super(key);

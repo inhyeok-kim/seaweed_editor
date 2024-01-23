@@ -36,7 +36,7 @@ export class SeaweedEditor {
         fetch('/test/Test.json')
         .then(res=>res.text())
         .then(text => {
-            this.swDocument = new SwDocument(this,text);
+            this.swDocument = new SwDocument(this);
             this.swSelection = new SwSelection(this, this.swDocument);
         })
 

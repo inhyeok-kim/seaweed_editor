@@ -1,3 +1,5 @@
+import { nanoid } from "nanoid";
+
 export default class Model{
     key : string;
     parent : Model | null = null;
@@ -5,7 +7,7 @@ export default class Model{
     dom : Element | null = null;
     index : number = 0
     static domType :string = '';
-    #isContainer : boolean = false;
+    static isContainer : boolean = false;
     
     constructor(key:string, arg? : any){
         this.key = key;

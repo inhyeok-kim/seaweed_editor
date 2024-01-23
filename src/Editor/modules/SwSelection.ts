@@ -46,8 +46,8 @@ export default class SwSelection {
     selection(){
         const selection = document.getSelection();
         if(selection){
-            const range = selection!.getRangeAt(0);
-            if(range){
+            if(selection.rangeCount>0){
+                const range = selection.getRangeAt(0);
                 let startNode : any;
                 if(range?.startContainer?.nodeName === '#text'){
                     startNode = range?.startContainer.parentElement;

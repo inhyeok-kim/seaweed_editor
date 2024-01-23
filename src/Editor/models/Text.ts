@@ -12,11 +12,14 @@ export default class Text extends Model{
         const model = super.create(key,text) as Text;
         if(text){
             model.text = text;
-            (model.dom! as HTMLSpanElement).innerText = model.text;
+        } else {
+            model.text = '\n';
         }
+        (model.dom! as HTMLSpanElement).innerText = model.text;
 
         return model;
 
     }
+    
 
 }
