@@ -2,10 +2,14 @@ import Model from "./Model";
 
 export default class Text extends Model{
     text : string = '';
-    static domType = 'span';
+    static domType = '#text';
 
     constructor(key:string,value: string){
         super(key);
+    }
+
+    static apply(domNode: Node): Model {
+        return super.apply(domNode);
     }
     
     static create(key: string, text? : string): Text {

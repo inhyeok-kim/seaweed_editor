@@ -5,6 +5,16 @@ import Model from "../models/Model";
 import Paragraph from "../models/Paragraph";
 import Text from "../models/Text";
 import {nanoid} from 'nanoid';
+import SwRegister, { MODEL_KEY } from "./SwRegister";
+import BreakLine from "../models/BreakLine";
+
+const OBSERVER_CONFIG : MutationObserverInit = {
+    attributes: true,
+    characterData: true,
+    characterDataOldValue: true,
+    childList: true,
+    subtree: true,
+};
 
 export default class SwDocument{
     editor : SeaweedEditor;
@@ -12,49 +22,103 @@ export default class SwDocument{
     mocuMap : {[key : string] : Model} = {};
     #removedListByApi : string[] = [];
 
-    constructor(editor : SeaweedEditor, document? : string){
+    constructor(editor : SeaweedEditor, doc? : string){
         this.editor = editor;
-        this.editor.editorEl!.addEventListener('beforeinput',this.beforeInputEventHandler.bind(this));
-        // this.editor.editorEl!.addEventListener('input',this.inputEventHandler.bind(this));
-        // this.editor.editorEl?.addEventListener('paste',this.pasteEventHandler.bind(this));
+        //@ts-ignore
+        this.editor.editorEl[MODEL_KEY] = 'root';
 
-        if(document){
-            // this.#mocument = document;
-            this.convertJsonToModel(document)
-        } else {
-            const startParagraph = Paragraph.create(nanoid());
-            const startText = Text.create(nanoid());
-            startParagraph.appendAt(startText);
-            this.mocuMap[startParagraph.key] = startParagraph;
-            this.mocuMap[startText.key] = startText;
-            this.mocument.push(startParagraph);
-        }
         this.render();
 
-        const config : MutationObserverInit = { characterData: true, childList: true, subtree: true };
+        SwRegister.addType("#text" ,Text);
+        SwRegister.addType("P" ,Paragraph);
+        SwRegister.addType("UL" ,List);
+        SwRegister.addType("OL" ,List);
+        SwRegister.addType("LI" ,ListItem);
+        SwRegister.addType("BR" ,BreakLine);
+
+
         const callback = (mutationList : MutationRecord[], observer : any) => {
-            for (const mutation of mutationList) {
-                // console.log(mutation);
-                mutation.removedNodes.forEach(node=>{
-                    if(node.nodeName === '#text'){
-                    } else {
-                        const id = (node as any).dataset.id;
-                        if(this.#removedListByApi.includes(id)){ // api로 인해 삭제된 거였을 경우
-                            this.#removedListByApi.splice(this.#removedListByApi.indexOf(id),1);
-                            return false;
-                        } else { // user로 인해 삭제된 거였을 경우
-                            this.removeModel(this.mocuMap[id]);
-                        }
-                    }
-                })
-            }
-          };
+            this.update(mutationList);
+        };
         const observer = new MutationObserver(callback);
 
-        observer.observe(this.editor.editorEl!, config);
+        observer.observe(this.editor.editorEl!, OBSERVER_CONFIG);
+
+        if(doc){
+            // this.#mocument = document;
+            this.convertJsonToModel(doc)
+        } else {
+            const startParagraph = document.createElement("p");
+            startParagraph.appendChild(document.createElement("br"));
+            this.editor.editorEl?.appendChild(startParagraph);
+        }
+    }
+
+    insertModel(node : Node){
+        const oldModel = SwRegister.find(node);
+        if(oldModel){
+            oldModel.remove();
+        }
+        const model = SwRegister.create(node);
+        if(model){
+            const parent = SwRegister.find(model.dom.parentNode);
+            if(parent){
+                if((model.dom as Node).previousSibling){
+                    //@ts-ignore
+                    const prevModel = (model.dom as Node).previousSibling[MODEL_KEY];
+                    if(prevModel){
+                        (parent as Model).appendAtKey(model,prevModel.key,"after");
+                    }
+                } else if((model.dom as Node).nextSibling){
+                    //@ts-ignore
+                    const nextModel = (model.dom as Node).nextSibling[MODEL_KEY];
+                    if(nextModel){
+                        (parent as Model).appendAtKey(model,nextModel.key,"before");
+                    }
+                } else {
+                    (parent as Model).appendAt(model);
+                }
+            }
+            node.childNodes.forEach(child=>{this.insertModel(child)});
+        }
+    }
+
+    update(mutationList : MutationRecord[]){
+        mutationList.forEach(mutation=>{
+            if(mutation.type === 'childList') {
+                // console.log(mutation);
+                mutation.addedNodes.forEach(node=>{
+                    this.insertModel(node);
+                });
+                mutation.removedNodes.forEach(node=>{
+                    //@ts-ignore
+                    if(node[MODEL_KEY]){
+                        //@ts-ignore
+                        const model = node[MODEL_KEY];
+
+                        if(model.parent){
+                            model.remove();
+                        }
+                    }
+                });
+            } else if(mutation.type === 'characterData'){
+
+            }
+        });
+        // console.log(this.getMocument());
+    }
+
+    getMocument(){
+        const mocu : Model[] = [];
+        this.editor.editorEl?.childNodes.forEach(node=>{
+            //@ts-ignore
+            mocu.push(node[MODEL_KEY]);
+        });
+        return mocu;
     }
 
 
+    
     render(){
         this.mocument.forEach(model=>{
             this.editor.editorEl?.appendChild(model.dom!);

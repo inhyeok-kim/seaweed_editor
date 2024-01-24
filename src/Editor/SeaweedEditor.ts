@@ -53,6 +53,10 @@ export class SeaweedEditor {
         }
     }
 
+    getDocument(){
+        return this.swDocument?.getMocument();
+    }
+
     
 
 }
