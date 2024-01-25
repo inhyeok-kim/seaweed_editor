@@ -2,7 +2,7 @@ import Model from "./Model";
 
 export default class List extends Model{
     static isContainer = true;
-    static domType = 'ul';
+    static domType = 'UL';
     
     constructor(key:string){
         super(key);

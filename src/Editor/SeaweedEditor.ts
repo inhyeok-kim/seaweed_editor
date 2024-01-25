@@ -10,7 +10,7 @@ export class SeaweedEditor {
     selectionChangeHandlers : Function[] = [];
     contentsChangeHandlers : Function[] = [];
 
-    constructor(elem : string | HTMLElement){
+    constructor(elem : string | HTMLElement, isNew : boolean){
         let rootEl;
 
         if(typeof elem == "string"){
@@ -33,12 +33,8 @@ export class SeaweedEditor {
         this.editorEl = editorEl;
         rootEl.appendChild(editorEl);
         
-        fetch('/test/Test.json')
-        .then(res=>res.text())
-        .then(text => {
-            this.swDocument = new SwDocument(this);
-            this.swSelection = new SwSelection(this, this.swDocument);
-        })
+        this.swDocument = new SwDocument(this,isNew);
+        this.swSelection = new SwSelection(this, this.swDocument);
 
     }
 
@@ -57,10 +53,18 @@ export class SeaweedEditor {
         return this.swDocument?.getMocument();
     }
 
+    setBold(){
+        console.log(this.swSelection?.getSelection());
+    }
+
+    pushDataModel(dataModel : any){
+        this.swDocument!.applyDataModel(dataModel);
+    }
+
     
 
 }
 
-export default function createEditor(elem:string | HTMLElement){
-    return new SeaweedEditor(elem);
+export default function createEditor(elem:string | HTMLElement,isNew : boolean){
+    return new SeaweedEditor(elem, isNew);
 };

@@ -2,7 +2,7 @@ import Model from "./Model";
 
 export default class ListItem extends Model{
     static isContainer = true;
-    static domType = 'li';
+    static domType = 'LI';
     
     constructor(key:string){
         super(key);

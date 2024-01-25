@@ -8,6 +8,11 @@ export default class SwRegister{
     static addType(name:string, model : any){
         MODEL_TYPES[name] = model;
     }
+
+    static getType(name : string){
+        return MODEL_TYPES[name];
+    }
+
     static find(node : Node){
         try {
             //@ts-ignore
@@ -35,6 +40,7 @@ export default class SwRegister{
         }
         return null;
     }
+
 }
 
 export const MODEL_KEY : string = '__model';

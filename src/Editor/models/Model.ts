@@ -14,8 +14,8 @@ export default class Model{
         this.key = key;
     }
 
-    static apply(domNode : Node) {
-        const model = new this(nanoid());
+    static apply(domNode : Node, arg? : any) {
+        const model = new this(nanoid(),arg);
         //@ts-ignore
         domNode[MODEL_KEY] = model;
         model.dom = domNode;
@@ -24,13 +24,28 @@ export default class Model{
     }
 
     static create(key:string,arg? : any){
-        const model = new this(key);
-        const dom = document.createElement(this.domType);
+        const model = new this(key,arg);
+        if(this.domType === '#text'){
+            model.dom = document.createTextNode("");
+        } else {
+            model.dom = document.createElement(this.domType);
+        }
         //@ts-ignore
-        dom[MODEL_KEY] = model;
-        model.dom = dom;
+        model.dom[MODEL_KEY] = model;
+        
         console.log("new Model", model);
         return model;
+    }
+
+    format(){
+        return {
+            key : this.key,
+            parentKey : this.parent?.key,
+            //@ts-ignore
+            nextSibling : this.dom?.nextSibling ? this.dom?.nextSibling[MODEL_KEY].key : null,
+            //@ts-ignore
+            previousSibling : this.dom?.previousSibling ? this.dom?.previousSibling[MODEL_KEY].key : null
+        }
     }
 
     appendAt(child : Model,index?:number,needDomAppend? : boolean){
@@ -45,8 +60,9 @@ export default class Model{
 
         if(index){
             if(index > children.length || index < 0){
-                throw Error
-            } else if(index == children.length) {
+                index = 0;
+            }
+            if(index == children.length) {
                 if(needDomAppend){
                     this.dom?.appendChild(child.dom!);
                 }
@@ -99,8 +115,14 @@ export default class Model{
     remove(){
         if(this.parent){
             this.parent.removeChild(this);
-            console.log('remove ', this.key);
+            //@ts-ignore
+            delete this.dom[MODEL_KEY];
+        } else {
+            //@ts-ignore
+            delete this.dom[MODEL_KEY];
         }
+        console.log('remove ', this);
+        return this.key;
     }
 
 }

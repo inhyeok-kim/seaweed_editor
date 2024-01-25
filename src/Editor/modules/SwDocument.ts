@@ -20,12 +20,15 @@ export default class SwDocument{
     editor : SeaweedEditor;
     mocument : Model[] = [];
     mocuMap : {[key : string] : Model} = {};
+    remoteAppliedKey : {[key : string] : boolean} = {};
     #removedListByApi : string[] = [];
 
-    constructor(editor : SeaweedEditor, doc? : string){
+    constructor(editor : SeaweedEditor, isNew : boolean){
         this.editor = editor;
         //@ts-ignore
         this.editor.editorEl[MODEL_KEY] = 'root';
+
+        this.editor.editorEl?.addEventListener('input',this.inputEventHandler.bind(this));
 
         this.render();
 
@@ -44,10 +47,7 @@ export default class SwDocument{
 
         observer.observe(this.editor.editorEl!, OBSERVER_CONFIG);
 
-        if(doc){
-            // this.#mocument = document;
-            this.convertJsonToModel(doc)
-        } else {
+        if(isNew){
             const startParagraph = document.createElement("p");
             startParagraph.appendChild(document.createElement("br"));
             this.editor.editorEl?.appendChild(startParagraph);
@@ -57,12 +57,25 @@ export default class SwDocument{
     insertModel(node : Node){
         const oldModel = SwRegister.find(node);
         if(oldModel){
-            oldModel.remove();
+            const key = oldModel.remove();
+            this.editor.contentsChangeHandlers.forEach(f=>{
+                f({
+                    type : 'remove',
+                    key : key
+                });
+            })
+            delete this.mocuMap[key];
         }
         const model = SwRegister.create(node);
         if(model){
+            this.mocuMap[model.key] = model;
             const parent = SwRegister.find(model.dom.parentNode);
+            const dataModel : any = {
+                type : 'create',
+                tagName : Object.getPrototypeOf(model).constructor.domType,
+            };
             if(parent){
+                dataModel.parent = parent.key;
                 if((model.dom as Node).previousSibling){
                     //@ts-ignore
                     const prevModel = (model.dom as Node).previousSibling[MODEL_KEY];
@@ -79,6 +92,10 @@ export default class SwDocument{
                     (parent as Model).appendAt(model);
                 }
             }
+            dataModel.format = model.format();
+            this.editor.contentsChangeHandlers.forEach(f=>{
+                f(dataModel);
+            })
             node.childNodes.forEach(child=>{this.insertModel(child)});
         }
     }
@@ -88,21 +105,58 @@ export default class SwDocument{
             if(mutation.type === 'childList') {
                 // console.log(mutation);
                 mutation.addedNodes.forEach(node=>{
+                    //@ts-ignore
+                    if(node[MODEL_KEY]){
+                        //@ts-ignore
+                        if(this.remoteAppliedKey[node[MODEL_KEY].key]){
+                            //@ts-ignore
+                            delete this.remoteAppliedKey[node[MODEL_KEY].key]
+                            return;
+                        }
+                    }
                     this.insertModel(node);
                 });
                 mutation.removedNodes.forEach(node=>{
                     //@ts-ignore
                     if(node[MODEL_KEY]){
                         //@ts-ignore
-                        const model = node[MODEL_KEY];
-
-                        if(model.parent){
-                            model.remove();
+                        if(this.remoteAppliedKey[node[MODEL_KEY].key]){
+                            //@ts-ignore
+                            delete this.remoteAppliedKey[node[MODEL_KEY].key]
+                            return;
                         }
+                    }
+
+                    //@ts-ignore
+                    if(node[MODEL_KEY]){
+                        //@ts-ignore
+                        const model = node[MODEL_KEY];
+                        const key = model.remove();
+                        delete this.mocuMap[key];
+                        this.editor.contentsChangeHandlers.forEach(f=>{
+                            f({
+                                type : 'remove',
+                                key : key
+                            });
+                        });
                     }
                 });
             } else if(mutation.type === 'characterData'){
-
+                //@ts-ignore
+                const model = mutation.target[MODEL_KEY];
+                if(model){
+                    if(this.remoteAppliedKey[model.key]){
+                        //@ts-ignore
+                        delete this.remoteAppliedKey[model.key]
+                        return;
+                    }
+    
+                    const dataModel = model.update(mutation);
+                    this.editor.contentsChangeHandlers.forEach(f=>{
+                        f(dataModel);
+                    })
+                }
+                // console.log(this.editor.swSelection?.getSelection());
             }
         });
         // console.log(this.getMocument());
@@ -117,6 +171,42 @@ export default class SwDocument{
         return mocu;
     }
 
+    applyDataModel(dataModel : any){
+        console.log(dataModel);
+        switch (dataModel.type) {
+            case 'create':
+                const model = SwRegister.getType(dataModel.tagName).create(dataModel.format.key);
+                this.remoteAppliedKey[model.key] = true;
+                this.mocuMap[model.key] = model;
+                const parentKey = dataModel.format.parentKey;
+                if(parentKey){
+                    const parent = this.mocuMap[parentKey];
+                    if(dataModel.format.previousSibling){
+                        parent.appendAtKey(model,dataModel.format.previousSibling,"after",true);
+                    } else if(dataModel.format.nextSibling){
+                        parent.appendAtKey(model,dataModel.format.nextSibling,"before",true);
+                    } else {
+                        parent.appendAt(model,0,true);
+                    }
+                } else {
+                    if(dataModel.format.nextSibling){
+                        this.editor.editorEl?.insertBefore(model.dom,this.mocuMap[dataModel.format.nextSibling].dom);
+                    } else {
+                        this.editor.editorEl?.appendChild(model.dom);
+                    }
+                }
+                break;
+            case 'remove':
+                const removeModel =this.mocuMap[dataModel.key];
+                removeModel.dom?.parentNode?.removeChild(removeModel.dom);
+                removeModel.remove();
+                break;
+            case 'update':
+                //@ts-ignore
+                this.mocuMap[dataModel.key].setText(dataModel.text);
+                break;
+        }
+    }
 
     
     render(){
@@ -161,23 +251,23 @@ export default class SwDocument{
     }
 
     inputEventHandler(e:Event){
-        const inputType = (e as InputEvent).inputType;
-        e.preventDefault();
-        if(inputType === 'deleteContentBackward'){
-            this.editor.swSelection?.selection();
-            // const selection = getSelection();
-            // console.log(selection!.);
-        } else {
-            const data = (e as InputEvent).data;
-            const selection = this.editor.swSelection?.getSelection();
-        }
+        // console.log(e);
+        // const inputType = (e as InputEvent).inputType;
+        // e.preventDefault();
+        // if(inputType === 'deleteContentBackward'){
+        //     this.editor.swSelection?.selection();
+        //     // const selection = getSelection();
+        //     // console.log(selection!.);
+        // } else {
+        //     const data = (e as InputEvent).data;
+        //     const selection = this.editor.swSelection?.getSelection();
+        // }
     }
 
     beforeInputEventHandler(e:Event){
         const ev = e as InputEvent;
         // const ranges = ev.getTargetRanges();
         // if(ranges.length > 1){
-        this.getSelectedNodes();
         //     e.preventDefault();
         // }
     }
@@ -280,28 +370,4 @@ export default class SwDocument{
         } 
     }
 
-    getSelectedNodes() {
-        const range = document.getSelection()?.getRangeAt(0);
-        let list : Node[] = [];
-        if(range){
-            const root = range.commonAncestorContainer;
-            list.push(root);
-            if(root.childNodes.length>1){
-                list = list.concat(this.getSelectedChildren(range,root));
-                console.log(list);
-            }
-        }
-    }
-    getSelectedChildren(range : Range, node : Node){
-        let list : Node[] = [];
-        if(node.hasChildNodes()){
-            node.childNodes.forEach(_node =>{
-                if(range.intersectsNode(_node)){
-                    list.push(_node);
-                    list = list.concat(this.getSelectedChildren(range,_node))
-                }
-            });
-        }
-        return list;
-    }
 }
