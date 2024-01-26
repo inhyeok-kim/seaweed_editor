@@ -13,14 +13,14 @@ export default class Text extends Model{
         return super.apply(domNode,domNode.textContent);
     }
     
-    static create(key: string, text? : string): Text {
-        const model = super.create(key,text) as Text;
-        if(text){
-            model.text = text;
+    static create(key: string, format? : any): Text {
+        const model = super.create(key,format.text) as Text;
+        if(format.text){
+            model.text = format.text;
         } else {
             model.text = '\n';
         }
-        (model.dom! as HTMLSpanElement).innerText = model.text;
+        (model.dom! as HTMLSpanElement).textContent = model.text;
 
         return model;
 

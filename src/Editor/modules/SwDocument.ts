@@ -75,7 +75,7 @@ export default class SwDocument{
                 tagName : Object.getPrototypeOf(model).constructor.domType,
             };
             if(parent){
-                dataModel.parent = parent.key;
+                // dataModel.parent = parent.key;
                 if((model.dom as Node).previousSibling){
                     //@ts-ignore
                     const prevModel = (model.dom as Node).previousSibling[MODEL_KEY];
@@ -87,6 +87,8 @@ export default class SwDocument{
                     const nextModel = (model.dom as Node).nextSibling[MODEL_KEY];
                     if(nextModel){
                         (parent as Model).appendAtKey(model,nextModel.key,"before");
+                    } else {
+                        (parent as Model).appendAt(model);
                     }
                 } else {
                     (parent as Model).appendAt(model);
@@ -175,7 +177,7 @@ export default class SwDocument{
         console.log(dataModel);
         switch (dataModel.type) {
             case 'create':
-                const model = SwRegister.getType(dataModel.tagName).create(dataModel.format.key);
+                const model = SwRegister.getType(dataModel.tagName).create(dataModel.format.key,dataModel.format);
                 this.remoteAppliedKey[model.key] = true;
                 this.mocuMap[model.key] = model;
                 const parentKey = dataModel.format.parentKey;
@@ -192,7 +194,17 @@ export default class SwDocument{
                     if(dataModel.format.nextSibling){
                         this.editor.editorEl?.insertBefore(model.dom,this.mocuMap[dataModel.format.nextSibling].dom);
                     } else {
-                        this.editor.editorEl?.appendChild(model.dom);
+                        if(dataModel.format.previousSibling) {
+                            if(this.mocuMap[dataModel.format.previousSibling]){
+                                if(this.mocuMap[dataModel.format.previousSibling].dom?.nextSibling){
+                                    this.editor.editorEl?.insertBefore(model.dom,this.mocuMap[dataModel.format.previousSibling].dom!.nextSibling);
+                                } else {
+                                    this.editor.editorEl?.appendChild(model.dom);    
+                                }
+                            }
+                        } else {
+                            this.editor.editorEl?.appendChild(model.dom);
+                        }
                     }
                 }
                 break;

@@ -10,6 +10,9 @@ editor.on("selection_change",(selection)=>{
 editor.on("contents_change",(dataModel)=>{
     editor2.pushDataModel(dataModel);
 })
+editor2.on("contents_change",(dataModel)=>{
+    console.log(dataModel);
+})
 
 document.getElementById('btn').addEventListener('click',()=>{
     const doc = editor.getDocument();

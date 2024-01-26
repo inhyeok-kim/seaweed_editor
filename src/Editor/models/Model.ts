@@ -38,19 +38,29 @@ export default class Model{
     }
 
     format(){
-        return {
+        const f = {
             key : this.key,
             parentKey : this.parent?.key,
-            //@ts-ignore
-            nextSibling : this.dom?.nextSibling ? this.dom?.nextSibling[MODEL_KEY].key : null,
-            //@ts-ignore
-            previousSibling : this.dom?.previousSibling ? this.dom?.previousSibling[MODEL_KEY].key : null
         }
+        if(this.dom?.previousSibling){
+            //@ts-ignore
+            if(this.dom.previousSibling[MODEL_KEY]){
+                //@ts-ignore
+                f.previousSibling = this.dom?.previousSibling[MODEL_KEY].key
+            }
+        } else if (this.dom?.nextSibling){
+            //@ts-ignore
+            if(this.dom?.nextSibling[MODEL_KEY]){
+                //@ts-ignore
+                f.nextSibling = this.dom?.nextSibling[MODEL_KEY].key
+            }
+        }
+
+        return f;
     }
 
     appendAt(child : Model,index?:number,needDomAppend? : boolean){
         let children = this.children;
-
         if(!child.parent){
             child.parent = this;
         } else if(child.parent != this){
