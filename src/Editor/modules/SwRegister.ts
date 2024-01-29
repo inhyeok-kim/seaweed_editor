@@ -27,6 +27,7 @@ export default class SwRegister{
             }
             return null;
         } catch (error) {
+            console.log(error);
             console.log(node);
             return null;
         }

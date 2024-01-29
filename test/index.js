@@ -9,9 +9,11 @@ editor.on("selection_change",(selection)=>{
 
 editor.on("contents_change",(dataModel)=>{
     editor2.pushDataModel(dataModel);
+    // console.log("pushData", dataModel);
 })
 editor2.on("contents_change",(dataModel)=>{
-    console.log(dataModel);
+    editor.pushDataModel(dataModel);
+    // console.log("contents_change",dataModel);
 })
 
 document.getElementById('btn').addEventListener('click',()=>{

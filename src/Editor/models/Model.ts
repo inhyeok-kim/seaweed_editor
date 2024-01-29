@@ -19,7 +19,7 @@ export default class Model{
         //@ts-ignore
         domNode[MODEL_KEY] = model;
         model.dom = domNode;
-        console.log("new Model", model);
+        // console.log("new Model", model);
         return model;
     }
 
@@ -33,7 +33,7 @@ export default class Model{
         //@ts-ignore
         model.dom[MODEL_KEY] = model;
         
-        console.log("new Model", model);
+        // console.log("new Model", model);
         return model;
     }
 
@@ -131,7 +131,7 @@ export default class Model{
             //@ts-ignore
             delete this.dom[MODEL_KEY];
         }
-        console.log('remove ', this);
+        // console.log('remove ', this);
         return this.key;
     }
 

@@ -20,8 +20,10 @@ export default class SwDocument{
     editor : SeaweedEditor;
     mocument : Model[] = [];
     mocuMap : {[key : string] : Model} = {};
-    remoteAppliedKey : {[key : string] : boolean} = {};
-    #removedListByApi : string[] = [];
+    remoteCreateKey : {[key : string] : boolean} = {};
+    remoteRemoveKey : {[key : string] : boolean} = {};
+    remoteUpdateKey : {[key : string] : boolean} = {};
+    mutation : MutationObserver;
 
     constructor(editor : SeaweedEditor, isNew : boolean){
         this.editor = editor;
@@ -44,7 +46,7 @@ export default class SwDocument{
             this.update(mutationList);
         };
         const observer = new MutationObserver(callback);
-
+        this.mutation = observer;
         observer.observe(this.editor.editorEl!, OBSERVER_CONFIG);
 
         if(isNew){
@@ -69,6 +71,9 @@ export default class SwDocument{
         const model = SwRegister.create(node);
         if(model){
             this.mocuMap[model.key] = model;
+            if(!model.dom.parentNode){
+                return null;
+            }
             const parent = SwRegister.find(model.dom.parentNode);
             const dataModel : any = {
                 type : 'create',
@@ -104,59 +109,59 @@ export default class SwDocument{
 
     update(mutationList : MutationRecord[]){
         mutationList.forEach(mutation=>{
+            console.log(mutation);
             if(mutation.type === 'childList') {
-                // console.log(mutation);
                 mutation.addedNodes.forEach(node=>{
                     //@ts-ignore
                     if(node[MODEL_KEY]){
                         //@ts-ignore
-                        if(this.remoteAppliedKey[node[MODEL_KEY].key]){
+                        if(this.remoteCreateKey[node[MODEL_KEY].key]){
                             //@ts-ignore
-                            delete this.remoteAppliedKey[node[MODEL_KEY].key]
-                            return;
+                            delete this.remoteCreateKey[node[MODEL_KEY].key]
+                        } else {
+                            this.insertModel(node);
                         }
+                    } else {
+                        this.insertModel(node);
                     }
-                    this.insertModel(node);
+                    
                 });
                 mutation.removedNodes.forEach(node=>{
                     //@ts-ignore
                     if(node[MODEL_KEY]){
                         //@ts-ignore
-                        if(this.remoteAppliedKey[node[MODEL_KEY].key]){
+                        if(this.remoteRemoveKey[node[MODEL_KEY].key]){
                             //@ts-ignore
-                            delete this.remoteAppliedKey[node[MODEL_KEY].key]
-                            return;
+                            delete this.remoteRemoveKey[node[MODEL_KEY].key]
+                        } else {
+                            //@ts-ignore
+                            const model = node[MODEL_KEY];
+                            const key = model.remove();
+                            delete this.mocuMap[key];
+                            this.editor.contentsChangeHandlers.forEach(f=>{
+                                f({
+                                    type : 'remove',
+                                    key : key
+                                });
+                            });
                         }
                     }
 
-                    //@ts-ignore
-                    if(node[MODEL_KEY]){
-                        //@ts-ignore
-                        const model = node[MODEL_KEY];
-                        const key = model.remove();
-                        delete this.mocuMap[key];
-                        this.editor.contentsChangeHandlers.forEach(f=>{
-                            f({
-                                type : 'remove',
-                                key : key
-                            });
-                        });
-                    }
                 });
             } else if(mutation.type === 'characterData'){
                 //@ts-ignore
                 const model = mutation.target[MODEL_KEY];
                 if(model){
-                    if(this.remoteAppliedKey[model.key]){
+                    if(this.remoteUpdateKey[model.key]){
                         //@ts-ignore
-                        delete this.remoteAppliedKey[model.key]
-                        return;
+                        delete this.remoteUpdateKey[model.key]
+                    } else {
+                        const dataModel = model.update(mutation);
+                        this.editor.contentsChangeHandlers.forEach(f=>{
+                            f(dataModel);
+                        });
                     }
     
-                    const dataModel = model.update(mutation);
-                    this.editor.contentsChangeHandlers.forEach(f=>{
-                        f(dataModel);
-                    })
                 }
                 // console.log(this.editor.swSelection?.getSelection());
             }
@@ -174,11 +179,12 @@ export default class SwDocument{
     }
 
     applyDataModel(dataModel : any){
-        console.log(dataModel);
+        this.mutation.disconnect()
+        console.log("applyDataModel",dataModel);
         switch (dataModel.type) {
             case 'create':
                 const model = SwRegister.getType(dataModel.tagName).create(dataModel.format.key,dataModel.format);
-                this.remoteAppliedKey[model.key] = true;
+                this.remoteCreateKey[model.key] = true;
                 this.mocuMap[model.key] = model;
                 const parentKey = dataModel.format.parentKey;
                 if(parentKey){
@@ -210,14 +216,20 @@ export default class SwDocument{
                 break;
             case 'remove':
                 const removeModel =this.mocuMap[dataModel.key];
-                removeModel.dom?.parentNode?.removeChild(removeModel.dom);
-                removeModel.remove();
+                if(removeModel){
+                    this.remoteRemoveKey[removeModel.key] = true;
+                    removeModel.dom?.parentNode?.removeChild(removeModel.dom);
+                    removeModel.remove();
+                }
                 break;
             case 'update':
+                // console.log('update', dataModel.key);
+                this.remoteUpdateKey[dataModel.key] = true;
                 //@ts-ignore
                 this.mocuMap[dataModel.key].setText(dataModel.text);
                 break;
         }
+        this.mutation.observe(this.editor.editorEl!, OBSERVER_CONFIG);
     }
 
     
