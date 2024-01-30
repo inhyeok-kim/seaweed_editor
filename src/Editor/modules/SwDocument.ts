@@ -180,7 +180,7 @@ export default class SwDocument{
 
     applyDataModel(dataModel : any){
         this.mutation.disconnect()
-        console.log("applyDataModel",dataModel);
+        // console.log("applyDataModel",dataModel);
         switch (dataModel.type) {
             case 'create':
                 const model = SwRegister.getType(dataModel.tagName).create(dataModel.format.key,dataModel.format);
